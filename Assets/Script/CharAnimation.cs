@@ -1,38 +1,33 @@
-using System;
 using UnityEngine;
 
 public class CharAnimation : MonoBehaviour
 {
-    private Characters character;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    private Character character;
+
     void Start()
     {
-        character = GetComponent<Characters>();
+        character = GetComponent<Character>();
     }
 
-    private void ChooseAnimation(Characters c)
+    void Update()
     {
-        c.Anim.SetBool("IsIdle",false);
+        ChooseAnimation(character);
+    }
+
+    private void ChooseAnimation(Character c)
+    {
+        c.Anim.SetBool("IsIdle", false);
         c.Anim.SetBool("IsWalk", false);
 
         switch (c.State)
         {
             case CharState.Idle:
-                { 
-                    c.Anim.SetBool("IsIdle",true); 
-                    break;
-                }
-            case CharState.Walk:
-            { 
-                c.Anim.SetBool("IsWalk",true); 
+                c.Anim.SetBool("IsIdle", true);
                 break;
-            }
-               
+            case CharState.Walk:
+            case CharState.WalkToEnemy:
+                c.Anim.SetBool("IsWalk", true);
+                break;
         }
-    }
-
-    private void Update()
-    {
-        ChooseAnimation(character);
     }
 }
