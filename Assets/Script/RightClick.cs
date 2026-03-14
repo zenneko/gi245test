@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,6 +7,9 @@ public class RightClick : MonoBehaviour
     private Camera cam;
     public LayerMask layerMask;
     public static RightClick instance;
+    
+   
+    
 
     void Start()
     {
@@ -46,6 +50,7 @@ public class RightClick : MonoBehaviour
         {
             if (h != null) h.WalkToPosition(hit.point);
         }
+        
     }
 
     private void CommandToAttack(RaycastHit hit, List<Character> heroes)

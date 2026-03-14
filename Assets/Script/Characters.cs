@@ -27,6 +27,10 @@ public abstract class Character : MonoBehaviour
     public Character CurCharTarget { get { return curCharTarget; } set { curCharTarget = value; } }
 
     [SerializeField] protected float attackRange = 2f;
+    public float AttackRange
+    {
+        get { return attackRange; }
+    }
     [SerializeField] protected int attackDamage = 3;
     [SerializeField] protected float attackCoolDown = 2f;
     [SerializeField] protected float attackTimer = 0f;
@@ -41,6 +45,7 @@ public abstract class Character : MonoBehaviour
     public bool IsMagicMode {get { return isMagicMode; } set { isMagicMode = value; }}
 
     protected VFXManager vfxManager;
+    protected UiManager uiManager;
 
     void Awake()
     {
@@ -69,8 +74,9 @@ public abstract class Character : MonoBehaviour
         {
             navAgent.SetDestination(dest);
             navAgent.isStopped = false;
-            SetState(CharState.Walk);
+            
         }
+        SetState(CharState.Walk);
     }
 
     protected void WalkUpdate()
@@ -86,6 +92,15 @@ public abstract class Character : MonoBehaviour
         navAgent.SetDestination(target.transform.position);
         navAgent.isStopped = false;
         SetState(CharState.WalkToEnemy);
+
+        if (isMagicMode)
+        {
+            SetState(CharState.WalkToMagicCast);
+        }
+        else
+        {
+            SetState(CharState.WalkToEnemy);
+        }
     }
 
     protected void WalkToEnemyUpdate()
@@ -165,9 +180,10 @@ public abstract class Character : MonoBehaviour
         return false;
     }
 
-    public void charInit(VFXManager vfxM)
+    public void charInit(VFXManager vfxM, UiManager uiM)
     {
         vfxManager = vfxM;
+        uiManager = uiM;
     }
 
     public void ReceiveDamge(int damage)
@@ -184,4 +200,69 @@ public abstract class Character : MonoBehaviour
         }
     
     }
+
+    protected void MagicCastLogic(Magic magic)
+    {
+        Character target = curCharTarget.GetComponent<Character>();
+        if (target != null)
+        {
+            target.ReceiveDamage(magic.Power);
+        }
+
+    }
+
+    private IEnumerator ShootMagicCast(Magic curMagicCast)
+    {
+        if (vfxManager != null)
+        {
+            vfxManager.ShootMagic(curMagicCast.ShootId,transform.position,curCharTarget.transform.position,curMagicCast.ShootTime);
+
+            yield return new WaitForSeconds(curMagicCast.ShootTime);
+            
+            MagicCastLogic(curMagicCast);
+            isMagicMode = false;
+            
+            SetState(CharState.Idle);
+        }
+    }
+
+    private IEnumerator LoadMagicCast(Magic curMagicCasts)
+    {
+        if (vfxManager != null)
+        {
+            vfxManager.LoadMagic(curMagicCasts.LoadId,transform.position,curMagicCasts.LoadTime);
+
+            yield return new WaitForSeconds(curMagicCasts.LoadTime);
+
+            StartCoroutine(ShootMagicCast(curMagicCasts));
+        }
+    }
+
+    private void MagicCast(Magic curMagicCast)
+    {
+        transform.LookAt(curCharTarget.transform);
+        anim.SetTrigger("MagicCast");   
+        StartCoroutine(LoadMagicCast(curMagicCast));
+    }
+
+    protected void WalkToMagicCastUpdate()
+    {
+        if (curCharTarget == null || curMagicCast == null)
+        {
+            SetState(CharState.Idle);
+            return;
+        }
+
+        navAgent.SetDestination(curCharTarget.transform.position);
+        float distance = Vector3.Distance(transform.position, curCharTarget.transform.position);
+        if (distance <= curMagicCast.Range)
+        {
+            navAgent.isStopped = true;
+            SetState(CharState.MagicCast);
+            MagicCast(curMagicCast);
+        }
+    }
+    
+    
+
 }

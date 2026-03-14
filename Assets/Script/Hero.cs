@@ -15,6 +15,10 @@ public class Hero : Character
             case CharState.Attack:
                 AttackUpdate();
                 break;
+            case CharState.WalkToMagicCast:
+                WalkToEnemyUpdate();
+                break;
+           
         }
     }
 }
