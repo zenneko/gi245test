@@ -19,8 +19,11 @@ public class Magic
     public int LoadId { get { return loadId; } }
     [SerializeField] private int shootId;
     public int ShootId { get { return shootId; } }
+    // W7: icon from ScriptableObject
+    [SerializeField] private Sprite icon;
+    public Sprite Icon { get { return icon; } }
 
-
+    // Original constructor
     public Magic(int id, string name, float range, int power, float loadTime, float shootTime, int loadId, int shootId)
     {
         this.id = id;
@@ -31,5 +34,19 @@ public class Magic
         this.shootTime = shootTime;
         this.loadId = loadId;
         this.shootId = shootId;
+    }
+
+    // W7: Constructor from ScriptableObject
+    public Magic(MagicData data)
+    {
+        this.id = data.id;
+        this.name = data.magicName;
+        this.range = data.range;
+        this.power = data.power;
+        this.loadTime = data.loadTime;
+        this.shootTime = data.shootTime;
+        this.loadId = data.loadId;
+        this.shootId = data.shootId;
+        this.icon = data.icon;
     }
 }
