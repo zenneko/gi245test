@@ -65,6 +65,7 @@ MonoBehaviour:
       - rid: 1756802427203092489
       - rid: 1756802427203092490
       - rid: 1756802427203092491
+<<<<<<< Updated upstream
       - rid: 858137263040364544
       - rid: 858137263040364545
     m_RuntimeSettings:
@@ -84,6 +85,12 @@ MonoBehaviour:
       - rid: 1756802427203092489
       - rid: 1756802427203092491
       - rid: 858137263040364545
+=======
+      - rid: 858137631777620552
+      - rid: 858137631777620553
+    m_RuntimeSettings:
+      m_List: []
+>>>>>>> Stashed changes
   m_AssetVersion: 10
   m_ObsoleteDefaultVolumeProfile: {fileID: 0}
   m_RenderingLayerNames:
@@ -114,12 +121,20 @@ MonoBehaviour:
   references:
     version: 2
     RefIds:
+<<<<<<< Updated upstream
     - rid: 858137263040364544
+=======
+    - rid: 858137631777620552
+>>>>>>> Stashed changes
       type: {class: URPTerrainShaderSetting, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.Runtime}
       data:
         m_Version: 0
         m_IncludeTerrainShaders: 1
+<<<<<<< Updated upstream
     - rid: 858137263040364545
+=======
+    - rid: 858137631777620553
+>>>>>>> Stashed changes
       type: {class: UniversalRenderPipelineRuntimeTerrainShaders, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.Runtime}
       data:
         m_Version: 0
