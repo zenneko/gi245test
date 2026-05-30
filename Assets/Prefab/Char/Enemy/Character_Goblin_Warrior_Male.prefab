@@ -466,6 +466,8 @@ GameObject:
   - component: {fileID: 5254202320548190140}
   - component: {fileID: 3489011752571368699}
   - component: {fileID: 3052297500617617524}
+  - component: {fileID: 5148289557758565511}
+  - component: {fileID: 4775222867562506863}
   m_Layer: 6
   m_Name: Character_Goblin_Warrior_Male
   m_TagString: Enemy
@@ -542,9 +544,11 @@ MonoBehaviour:
   state: 0
   ringSelection: {fileID: 0}
   curHP: 100
+  maxHP: 100
   curCharTarget: {fileID: 0}
   attackRange: 2
   attackDamage: 3
+  defensePower: 0
   attackCoolDown: 2
   attackTimer: 0
   findingRange: 20
@@ -558,7 +562,13 @@ MonoBehaviour:
     shootTime: 0
     loadId: 0
     shootId: 0
+    icon: {fileID: 0}
   isMagicMode: 0
+  charName: 
+  profileSprite: {fileID: 0}
+  prefabID: -1
+  shieldHand: {fileID: 0}
+  expDrop: 10
 --- !u!114 &3489011752571368699
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -584,6 +594,51 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AttackAI
   curEnemy: {fileID: 0}
+--- !u!136 &5148289557758565511
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 112422}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.5
+  m_Height: 1
+  m_Direction: 1
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!195 &4775222867562506863
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 112422}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.5
+  m_Speed: 3.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 2
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 2
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
 --- !u!1 &114958
 GameObject:
   m_ObjectHideFlags: 0

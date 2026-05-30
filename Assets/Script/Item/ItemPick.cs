@@ -12,7 +12,7 @@ public class ItemPick : MonoBehaviour
     public void PickUpItem(Character hero)
     {
         if (hero == null || item == null || hero.InventoryItems == null) return;
-        for (int i = 0; i < hero.InventoryItems.Length - 1; i++)
+        for (int i = 0; i < hero.InventoryItems.Length; i++)
         {
             if (hero.InventoryItems[i] == null)
             {
@@ -24,9 +24,6 @@ public class ItemPick : MonoBehaviour
         }
     }
 
-    void OnMouseDown()
-    {
-        if (PartyManager.instance != null && PartyManager.instance.SelectChars.Count > 0)
-            PickUpItem(PartyManager.instance.SelectChars[0]);
-    }
+    // Pickup is triggered by LeftClick.SelectItem (W14 §46) — no OnMouseDown to avoid
+    // the unselect bug from the old input flow.
 }

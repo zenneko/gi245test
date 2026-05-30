@@ -53,13 +53,13 @@ public abstract class Character : MonoBehaviour
     [SerializeField] protected bool isMagicMode = false;
     public bool IsMagicMode { get { return isMagicMode; } set { isMagicMode = value; } }
 
-    // W7: Inventory
-    protected Item[] inventoryItems;
+    // W7: Inventory (bag) — serialized so starter items can be pre-filled in the Inspector
+    [SerializeField] protected Item[] inventoryItems = new Item[InventoryManager.MAXSLOT];
     public Item[] InventoryItems { get { return inventoryItems; } set { inventoryItems = value; } }
-    protected Item mainWeapon = null;
-    public Item MainWeapon { get { return mainWeapon; } set { mainWeapon = value; } }
-    protected Item shield = null;
-    public Item Shield { get { return shield; } set { shield = value; } }
+
+    // W9: Equipment store — index via InventoryManager.EquipIndexOf(type)  (0=Shield, 1=Weapon)
+    [SerializeField] protected Item[] equipmentItems = new Item[InventoryManager.EQUIP_COUNT];
+    public Item[] EquipmentItems { get { return equipmentItems; } set { equipmentItems = value; } }
 
     // W10: NPC interaction & profile
     [SerializeField] protected string charName = "";
@@ -74,10 +74,22 @@ public abstract class Character : MonoBehaviour
     protected VFXManager vfxManager;
     protected UiManager uiManager;
     protected PartyManager partyManager;
+    protected InventoryManager invManager;
 
     // W10: NPC target
     protected Npc curNpcTarget;
     public Npc CurNpcTarget { get { return curNpcTarget; } set { curNpcTarget = value; } }
+
+    // W9: Equipment — 3D shield model
+    [SerializeField] protected Transform shieldHand;
+    // Local offset applied to the spawned shield (relative to shieldHand)
+    [SerializeField] protected Vector3 shieldLocalPos = Vector3.zero;
+    [SerializeField] protected Vector3 shieldLocalEuler = new Vector3(-90f, 0f, -180f);
+    protected GameObject shieldObj;
+
+    // W13: Party invite — another hero to walk toward
+    protected Hero curHeroInvite = null;
+    public Hero CurHeroInvite { get { return curHeroInvite; } set { curHeroInvite = value; } }
 
     void Awake()
     {
@@ -140,15 +152,43 @@ public abstract class Character : MonoBehaviour
 
     protected void WalkToNpcUpdate()
     {
-        if (curNpcTarget == null) { SetState(CharState.Idle); return; }
-        navAgent.SetDestination(curNpcTarget.transform.position);
-        float distance = Vector3.Distance(transform.position, curNpcTarget.transform.position);
-        if (distance <= attackRange * 2f)
+        if (curNpcTarget == null && curHeroInvite == null) { SetState(CharState.Idle); return; }
+
+        if (curNpcTarget != null)
         {
-            navAgent.isStopped = true;
-            SetState(CharState.Idle);
-            curNpcTarget.TryStartDialogue(this);
+            navAgent.SetDestination(curNpcTarget.transform.position);
+            float distance = Vector3.Distance(transform.position, curNpcTarget.transform.position);
+            if (distance <= attackRange * 2f)
+            {
+                navAgent.isStopped = true;
+                SetState(CharState.Idle);
+                curNpcTarget.TryStartDialogue(this);
+                curNpcTarget = null;
+            }
         }
+        else if (curHeroInvite != null)
+        {
+            navAgent.SetDestination(curHeroInvite.transform.position);
+            float distance = Vector3.Distance(transform.position, curHeroInvite.transform.position);
+            if (distance <= attackRange * 2f)
+            {
+                navAgent.isStopped = true;
+                SetState(CharState.Idle);
+                Hero target = curHeroInvite;
+                curHeroInvite = null;
+                if (uiManager != null) uiManager.ShowJoinPartyDialogue(target, this);
+            }
+        }
+    }
+
+    // W13: walk toward another hero to invite to party
+    public void WalkToHero(Hero target)
+    {
+        if (curHP <= 0 || state == CharState.Die) return;
+        curHeroInvite = target;
+        navAgent.SetDestination(target.transform.position);
+        navAgent.isStopped = false;
+        SetState(CharState.WalkToNPC);
     }
 
     protected void WalkToEnemyUpdate()
@@ -241,14 +281,114 @@ public abstract class Character : MonoBehaviour
         vfxManager = vfxM;
         uiManager = uiM;
         partyManager = pm;
-        if (invM != null)
-            inventoryItems = new Item[InventoryManager.MAXSLOT];
+        invManager = invM;
+
+        // Keep items pre-filled in the Inspector; only build/resize when missing or wrong size
+        inventoryItems = ResizePreserve(inventoryItems, InventoryManager.MAXSLOT);
+        equipmentItems = ResizePreserve(equipmentItems, InventoryManager.EQUIP_COUNT);
+
+        // W9: apply stat/model effects for any equipment pre-placed in the Inspector
+        for (int i = 0; i < equipmentItems.Length; i++)
+            ApplyEquipEffects(equipmentItems[i]);
+    }
+
+    // Resize an item array to the target length while preserving existing entries
+    private static Item[] ResizePreserve(Item[] src, int length)
+    {
+        if (src != null && src.Length == length) return src;
+        Item[] dst = new Item[length];
+        if (src != null)
+            for (int i = 0; i < src.Length && i < length; i++)
+                dst[i] = src[i];
+        return dst;
     }
 
     // Keep old lowercase for backward compat with older code
     public void charInit(VFXManager vfxM, UiManager uiM)
     {
         CharInit(vfxM, uiM);
+    }
+
+    // W14: re-point this character's per-scene manager refs without touching state/inventory.
+    // Used after a warp so a persistent hero finds the new scene's UiManager/VFXManager/etc.
+    public void RefreshManagers(VFXManager vfxM, UiManager uiM, PartyManager pm, InventoryManager invM)
+    {
+        vfxManager = vfxM;
+        uiManager = uiM;
+        partyManager = pm;
+        invManager = invM;
+    }
+
+    // W9: Equipment — store item in its slot and apply its effects
+    public void EquipItem(Item item)
+    {
+        if (item == null) return;
+        int ei = InventoryManager.EquipIndexOf(item.Type);
+        if (ei < 0 || equipmentItems == null || ei >= equipmentItems.Length) return;
+        UnequipItem(item.Type);          // remove whatever was in that slot
+        equipmentItems[ei] = item;
+        ApplyEquipEffects(item);
+    }
+
+    public void UnequipItem(ItemType type)
+    {
+        int ei = InventoryManager.EquipIndexOf(type);
+        if (ei < 0 || equipmentItems == null || ei >= equipmentItems.Length) return;
+        Item cur = equipmentItems[ei];
+        if (cur == null) return;
+        RemoveEquipEffects(cur);
+        equipmentItems[ei] = null;
+    }
+
+    // Apply stat/model side-effects of wearing an item (also used for pre-placed gear)
+    protected void ApplyEquipEffects(Item item)
+    {
+        if (item == null) return;
+        if (item.Type == ItemType.Shield)
+        {
+            defensePower += item.Power;
+            SpawnShieldModel(item);
+        }
+        else if (item.Type == ItemType.Weapon)
+        {
+            attackDamage += item.Power;
+        }
+    }
+
+    protected void RemoveEquipEffects(Item item)
+    {
+        if (item == null) return;
+        if (item.Type == ItemType.Shield)
+        {
+            defensePower = Mathf.Max(0, defensePower - item.Power);
+            if (shieldObj != null) { Destroy(shieldObj); shieldObj = null; }
+        }
+        else if (item.Type == ItemType.Weapon)
+        {
+            attackDamage = Mathf.Max(0, attackDamage - item.Power);
+        }
+    }
+
+    private void SpawnShieldModel(Item item)
+    {
+        if (shieldHand == null || invManager == null || invManager.ItemPrefabs == null) return;
+        int pid = item.PrefabID;
+        if (pid < 0 || pid >= invManager.ItemPrefabs.Length || invManager.ItemPrefabs[pid] == null) return;
+
+        shieldObj = Instantiate(invManager.ItemPrefabs[pid], shieldHand);
+        shieldObj.transform.localPosition = shieldLocalPos;
+        shieldObj.transform.localRotation = Quaternion.Euler(shieldLocalEuler);
+    }
+
+    // W14: rebuild equipment 3D models from EquipmentItems WITHOUT changing stats
+    // (used after HeroData load, where stats are already restored from save)
+    public void RefreshEquipVisuals()
+    {
+        if (shieldObj != null) { Destroy(shieldObj); shieldObj = null; }
+        if (equipmentItems == null) return;
+        int si = InventoryManager.EquipIndexOf(ItemType.Shield);
+        if (si >= 0 && si < equipmentItems.Length && equipmentItems[si] != null)
+            SpawnShieldModel(equipmentItems[si]);
     }
 
     protected void MagicCastLogic(Magic magic)

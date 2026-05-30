@@ -5,6 +5,8 @@ public class QuestData : ScriptableObject
 {
     public int questId;
     public QuestType questType;
+    public string questName;
+    [TextArea] public string questDetail;
     public int questItemId;
     public int killCount;
     [TextArea] public string[] questDialogue;

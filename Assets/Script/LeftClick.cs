@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class LeftClick : MonoBehaviour
 {
@@ -17,19 +18,31 @@ public class LeftClick : MonoBehaviour
     void Start()
     {
         instance = this;
-        cam = Camera.main;
         layerMask = LayerMask.GetMask("Ground", "Character", "Building", "Item");
-        boxSelection = UiManager.instance.SelectionBox;
+        AcquireRefs();
+    }
+
+    // Re-acquire camera + box selection — needed if the previous refs got destroyed across a scene load
+    private void AcquireRefs()
+    {
+        if (cam == null) cam = Camera.main;
+        if (boxSelection == null && UiManager.instance != null) boxSelection = UiManager.instance.SelectionBox;
     }
 
     void Update()
     {
+        // Guard against stale refs after warp / scene reload
+        if (cam == null || boxSelection == null) { AcquireRefs(); if (cam == null) return; }
+
         if (Input.GetMouseButtonDown(0))
         {
             startPos = Input.mousePosition;
             isDragging = false;
             if (EventSystem.current.IsPointerOverGameObject()) return;
-            ClearEverything();
+            // Only clear selection if we're NOT clicking on something that needs it
+            // (heroes — to add to selection; items — to pick up using the current selection)
+            if (!IsClickOnPickable(Input.mousePosition))
+                ClearEverything();
         }
 
         if (Input.GetMouseButton(0))
@@ -69,7 +82,29 @@ public class LeftClick : MonoBehaviour
             case "Hero":
                 SelectCharacter(hit);
                 break;
+            case "Item":           // W14 §46: pickup dropped item
+                SelectItem(hit);
+                break;
         }
+    }
+
+    // W14 §46: route click on a dropped item to its ItemPick (selection preserved)
+    private void SelectItem(RaycastHit hit)
+    {
+        ItemPick pick = hit.collider.GetComponent<ItemPick>();
+        if (pick == null) return;
+        if (PartyManager.instance.SelectChars.Count <= 0) return;
+        pick.PickUpItem(PartyManager.instance.SelectChars[0]);
+    }
+
+    // Used at MouseDown to decide whether to keep or clear the current selection
+    private bool IsClickOnPickable(Vector2 screenPos)
+    {
+        Ray ray = cam.ScreenPointToRay(screenPos);
+        RaycastHit hit;
+        if (!Physics.Raycast(ray, out hit, 1000, layerMask)) return false;
+        string t = hit.collider.tag;
+        return t == "Hero" || t == "Player" || t == "Item";
     }
 
     // W12: fix — check for duplicate before adding

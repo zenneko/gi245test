@@ -2,7 +2,8 @@ using UnityEngine;
 
 public class InventoryManager : MonoBehaviour
 {
-    public const int MAXSLOT = 17; // 16 bag slots + 1 shield/equipment slot (index 16)
+    public const int MAXSLOT = 16;     // bag slots only (equipment lives in a separate array)
+    public const int EQUIP_COUNT = 2;  // equipment slots: Shield, Weapon (extend here)
 
     [SerializeField] private ItemData[] itemDataArr;
     public ItemData[] ItemDataArr { get { return itemDataArr; } }
@@ -18,12 +19,57 @@ public class InventoryManager : MonoBehaviour
         instance = this;
     }
 
+    // Maps an equippable ItemType to its index in Character.EquipmentItems. -1 = not equippable.
+    public static int EquipIndexOf(ItemType type)
+    {
+        switch (type)
+        {
+            case ItemType.Shield: return 0;
+            case ItemType.Weapon: return 1;
+            // case ItemType.Equipment: return 2;  // helmet / armor later
+            default: return -1;
+        }
+    }
+
     public Item CreateItem(int dataId)
     {
         if (dataId < 0 || dataId >= itemDataArr.Length || itemDataArr[dataId] == null) return null;
         return new Item(itemDataArr[dataId]);
     }
 
+    // ── Container-aware access (used by drag/drop) ────────────────────────────
+    // Reads/writes the right store based on whether the slot is a bag or equipment slot.
+    public Item GetItemAt(Character c, InventorySlot slot)
+    {
+        if (c == null || slot == null) return null;
+        if (slot.IsEquipment)
+        {
+            int ei = EquipIndexOf(slot.SlotType);
+            return (ei >= 0 && c.EquipmentItems != null && ei < c.EquipmentItems.Length)
+                ? c.EquipmentItems[ei] : null;
+        }
+        int id = slot.SlotId;
+        return (c.InventoryItems != null && id >= 0 && id < c.InventoryItems.Length)
+            ? c.InventoryItems[id] : null;
+    }
+
+    public void SetItemAt(Character c, InventorySlot slot, Item item)
+    {
+        if (c == null || slot == null) return;
+        if (slot.IsEquipment)
+        {
+            if (item != null) c.EquipItem(item);     // EquipItem stores it + applies effects
+            else c.UnequipItem(slot.SlotType);
+        }
+        else
+        {
+            int id = slot.SlotId;
+            if (c.InventoryItems != null && id >= 0 && id < c.InventoryItems.Length)
+                c.InventoryItems[id] = item;
+        }
+    }
+
+    // ── Bag-only helpers (buy/sell/drink/quest reward) ────────────────────────
     public void SaveItem(Character character, int slotId, Item item)
     {
         if (character.InventoryItems == null) return;
@@ -44,8 +90,7 @@ public class InventoryManager : MonoBehaviour
         if (PartyManager.instance.SelectChars.Count <= 0) return;
         Character hero = PartyManager.instance.SelectChars[0];
         if (item == null || item.Type != ItemType.Consumable) return;
-        if (item.ID >= 0 && item.ID < itemDataArr.Length && itemDataArr[item.ID] != null)
-            hero.Recover(itemDataArr[item.ID].healAmount);
+        hero.Recover(item.Power);
         RemoveItemFromSlot(hero, slotId);
         UiManager.instance.DeleteItemIcon(slotId);
     }
@@ -57,6 +102,10 @@ public class InventoryManager : MonoBehaviour
         int pid = item.PrefabID;
         if (pid < 0 || pid >= itemPrefabs.Length || itemPrefabs[pid] == null) return;
         GameObject obj = Instantiate(itemPrefabs[pid], position, Quaternion.identity);
+        // W14: apply per-item drop scale (any non-zero axis overrides the prefab's scale)
+        Vector3 s = item.DropScale;
+        if (s.x > 0f && s.y > 0f && s.z > 0f)
+            obj.transform.localScale = s;
         ItemPick pick = obj.GetComponent<ItemPick>();
         if (pick == null) pick = obj.AddComponent<ItemPick>();
         pick.Init(item);
@@ -75,30 +124,4 @@ public class InventoryManager : MonoBehaviour
         }
     }
 
-    // W12: Shop buy/sell
-    public bool BuyItem(Character buyer, int dataId)
-    {
-        if (buyer.InventoryItems == null) return false;
-        for (int i = 0; i < MAXSLOT - 1; i++)
-        {
-            if (buyer.InventoryItems[i] == null)
-            {
-                SaveItem(buyer, i, CreateItem(dataId));
-                return true;
-            }
-        }
-        return false; // inventory full
-    }
-
-    public bool SellItem(Character seller, int slotId, out int sellPrice)
-    {
-        sellPrice = 0;
-        if (seller.InventoryItems == null) return false;
-        if (slotId < 0 || slotId >= seller.InventoryItems.Length) return false;
-        Item item = seller.InventoryItems[slotId];
-        if (item == null) return false;
-        sellPrice = Mathf.Max(1, item.NormalPrice / 2);
-        RemoveItemFromSlot(seller, slotId);
-        return true;
-    }
 }

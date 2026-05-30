@@ -9,6 +9,8 @@ public class Quest
     public int questId;
     public QuestType questType;
     public QuestStatus questStatus;
+    public string questName;
+    public string questDetail;
 
     public int questItemId;   // item ID NPC wants (Delivery)
     public int killCount;     // kills required (KillCount)
@@ -30,6 +32,8 @@ public class Quest
         questId = data.questId;
         questType = data.questType;
         questStatus = QuestStatus.New;
+        questName = data.questName;
+        questDetail = data.questDetail;
         questItemId = data.questItemId;
         killCount = data.killCount;
         curKillCount = 0;

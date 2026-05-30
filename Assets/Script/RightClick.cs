@@ -37,6 +37,9 @@ public class RightClick : MonoBehaviour
             case "NPC":
                 CommandToWalkToNpc(hit, PartyManager.instance.SelectChars);
                 break;
+            case "Hero":
+                CommandToWalkToHero(hit, PartyManager.instance.SelectChars);
+                break;
         }
     }
 
@@ -71,6 +74,19 @@ public class RightClick : MonoBehaviour
         foreach (Character h in heroes)
         {
             if (h != null) h.WalkToNpc(npc);
+        }
+    }
+
+    // W13: invite a wandering hero to join the party
+    private void CommandToWalkToHero(RaycastHit hit, List<Character> heroes)
+    {
+        Hero targetHero = hit.collider.GetComponent<Hero>();
+        if (targetHero == null) return;
+        // Don't walk to a hero that's already in the party
+        if (PartyManager.instance.Members.Contains(targetHero)) return;
+        foreach (Character h in heroes)
+        {
+            if (h != null) h.WalkToHero(targetHero);
         }
     }
 }

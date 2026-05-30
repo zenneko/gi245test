@@ -12,17 +12,17 @@ public class QuestManager : MonoBehaviour
 
     void Awake()
     {
+        // W14: persist quest state across scenes
+        if (instance != null && instance != this) { Destroy(gameObject); return; }
         instance = this;
+        DontDestroyOnLoad(gameObject);
     }
 
     void Start()
     {
         foreach (QuestData data in questDataArr)
             quests.Add(new Quest(data));
-
-        // W13: init NPC characters
-        foreach (Npc npc in FindObjectsByType<Npc>(FindObjectsSortMode.None))
-            npc.CharInit(VFXManager.instance, UiManager.instance, PartyManager.instance, InventoryManager.instance);
+        // NPCs self-init in their own Start (W14) — supports per-scene NPCs
     }
 
     public Quest GetQuestById(int id)
@@ -41,11 +41,38 @@ public class QuestManager : MonoBehaviour
     public void CompleteQuest(Quest quest, Character hero)
     {
         quest.questStatus = QuestStatus.Finish;
+
+        // W10: hand over the quest item (remove it from the bag) for Delivery quests
+        if (quest.questType == QuestType.Delivery)
+            DeliverItem(hero, quest);
+
+        NPCGiveReward(quest, hero);
+
+        if (UiManager.instance != null) UiManager.instance.RefreshInventoryUI();
+    }
+
+    // Remove the quest item from the hero's bag (the "delivery")
+    public void DeliverItem(Character hero, Quest quest)
+    {
+        if (hero.InventoryItems == null) return;
+        for (int i = 0; i < hero.InventoryItems.Length; i++)
+        {
+            if (hero.InventoryItems[i] != null && hero.InventoryItems[i].ID == quest.questItemId)
+            {
+                InventoryManager.instance.RemoveItemFromSlot(hero, i);
+                break;
+            }
+        }
+    }
+
+    // NPC gives reward item + EXP
+    public void NPCGiveReward(Quest quest, Character hero)
+    {
         if (PartyManager.instance != null) PartyManager.instance.DistributeExp(quest.rewardExp);
         if (quest.rewardItemId >= 0 && hero.InventoryItems != null)
         {
             Item reward = InventoryManager.instance.CreateItem(quest.rewardItemId);
-            for (int i = 0; i < hero.InventoryItems.Length - 1; i++)
+            for (int i = 0; i < hero.InventoryItems.Length; i++)
             {
                 if (hero.InventoryItems[i] == null)
                 {

@@ -14,6 +14,10 @@ public class PartyManager : MonoBehaviour
     [SerializeField] private int partyGold = 100;
     public int PartyGold { get { return partyGold; } set { partyGold = value; } }
 
+    // W10: accepted quests (visible in Inspector for debugging)
+    [SerializeField] private List<Quest> questList = new List<Quest>();
+    public List<Quest> QuestList { get { return questList; } }
+
     // W14: cross-scene hero persistence
     [SerializeField] private HeroData[] heroData;
     public HeroData[] HeroDataArr { get { return heroData; } }
@@ -22,7 +26,12 @@ public class PartyManager : MonoBehaviour
 
     void Awake()
     {
+        // W14: persist across scene loads so the party survives warps
+        if (instance != null && instance != this) { Destroy(gameObject); return; }
         instance = this;
+        DontDestroyOnLoad(gameObject);
+        foreach (Character m in members)
+            if (m != null) DontDestroyOnLoad(m.gameObject);
     }
 
     void Start()
@@ -95,6 +104,32 @@ public class PartyManager : MonoBehaviour
         Character hero = members[i];
         selectChars.Remove(hero);
         hero.ToggleRingSelection(false);
+    }
+
+    // W13: Party Invite — add a wandering hero to the party
+    public void AddHeroToParty(Hero hero)
+    {
+        if (hero == null || members.Contains(hero)) return;
+        members.Add(hero);
+        DontDestroyOnLoad(hero.gameObject);   // W14: keep newly invited heroes across scenes
+        hero.CharInit(VFXManager.instance, UiManager.instance, this, InventoryManager.instance);
+        if (VFXManager.instance != null && VFXManager.instance.MagicDataArr != null
+            && VFXManager.instance.MagicDataArr.Length > 0)
+            hero.MagicSkills.Add(new Magic(VFXManager.instance.MagicDataArr[0]));
+        else
+            hero.MagicSkills.Add(new Magic(0, "Fireball", 10f, 30, 3f, 1f, 0, 1));
+        if (UiManager.instance != null) UiManager.instance.RefreshPartyAvatars();
+    }
+
+    // W11: Party Reform — remove a member from the party
+    public void RemoveHeroFromParty(int i)
+    {
+        if (i < 0 || i >= members.Count) return;
+        Character hero = members[i];
+        selectChars.Remove(hero);
+        hero.ToggleRingSelection(false);
+        members.RemoveAt(i);
+        if (UiManager.instance != null) UiManager.instance.RefreshPartyAvatars();
     }
 
     // W13

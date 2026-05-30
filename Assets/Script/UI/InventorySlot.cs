@@ -3,12 +3,14 @@ using UnityEngine.EventSystems;
 
 public class InventorySlot : MonoBehaviour, IDropHandler
 {
-    [SerializeField] private int slotId;
+    [SerializeField] private int slotId;                       // bag index (used when SlotType == None)
     public int SlotId { get { return slotId; } set { slotId = value; } }
 
-    // W9: None = accepts any item type; set to Shield for equipment slot
+    // W9: None = bag slot; Shield/Weapon = equipment slot (only accepts that type)
     [SerializeField] private ItemType slotType = ItemType.None;
     public ItemType SlotType { get { return slotType; } set { slotType = value; } }
+
+    public bool IsEquipment { get { return slotType != ItemType.None; } }
 
     public void OnDrop(PointerEventData eventData)
     {
@@ -16,28 +18,32 @@ public class InventorySlot : MonoBehaviour, IDropHandler
         Character hero = PartyManager.instance.SelectChars[0];
 
         ItemDrag dragged = eventData.pointerDrag?.GetComponent<ItemDrag>();
-        if (dragged == null) return;
+        if (dragged == null || dragged.OriginSlot == null || dragged.item == null) return;
 
-        // Reject if slot type doesn't match (e.g. shield slot only accepts Shield)
-        if (slotType != ItemType.None && dragged.item != null && dragged.item.Type != slotType) return;
-
-        int fromSlotId = dragged.FindIndexOfSlotParent();
+        InventorySlot fromSlot = dragged.OriginSlot;
         Item itemA = dragged.item;
-        Item itemB = (hero.InventoryItems != null && slotId < hero.InventoryItems.Length)
-            ? hero.InventoryItems[slotId] : null;
 
-        // Remove A from its original slot
-        if (fromSlotId >= 0)
-            InventoryManager.instance.RemoveItemFromSlot(hero, fromSlotId);
+        // This (target) is an equipment slot → only accept a matching item type
+        if (IsEquipment && itemA.Type != slotType) return;
 
-        // If slot B had an item, move it to slot A (swap)
-        if (itemB != null && fromSlotId >= 0)
-            InventoryManager.instance.SaveItem(hero, fromSlotId, itemB);
+        Item itemB = InventoryManager.instance.GetItemAt(hero, this);
 
-        // Place A in this slot
-        InventoryManager.instance.SaveItem(hero, slotId, itemA);
+        // Swapping would push itemB back to the origin; if origin is equipment it must match
+        if (fromSlot.IsEquipment && itemB != null && itemB.Type != fromSlot.SlotType) return;
 
-        // Re-parent the dragged icon
+        // Dropping back onto the same slot — nothing to do
+        if (fromSlot == this)
+        {
+            dragged.transform.SetParent(transform);
+            dragged.transform.localPosition = Vector3.zero;
+            return;
+        }
+
+        // Move B into the origin slot (or clear it), then place A in this slot
+        InventoryManager.instance.SetItemAt(hero, fromSlot, itemB);
+        InventoryManager.instance.SetItemAt(hero, this, itemA);
+
+        // Re-parent the dragged icon (RefreshInventoryUI rebuilds everything anyway)
         dragged.transform.SetParent(transform);
         dragged.transform.localPosition = Vector3.zero;
 

@@ -2908,6 +2908,9 @@ GameObject:
   - component: {fileID: 1975560216366504273}
   - component: {fileID: 4854796287968418655}
   - component: {fileID: 2617051503532300310}
+  - component: {fileID: 8096046481077048023}
+  - component: {fileID: 5202603433873596675}
+  - component: {fileID: 2329831759745720359}
   m_Layer: 6
   m_Name: Character_Hero_Knight_Male
   m_TagString: Hero
@@ -2958,10 +2961,10 @@ Animator:
   m_GameObject: {fileID: 162860}
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: b69174d668ba02d44b14a084b217670a, type: 3}
-  m_Controller: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: c060da880ac4c5548ba568d8435eae26, type: 2}
   m_CullingMode: 1
   m_UpdateMode: 0
-  m_ApplyRootMotion: 1
+  m_ApplyRootMotion: 0
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
@@ -3016,6 +3019,92 @@ CapsuleCollider:
   m_Direction: 1
   m_Center: {x: 0, y: 1, z: 0}
 --- !u!114 &2617051503532300310
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 162860}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5135040cd0505a24fa4b4dd2523bbcef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AttackAI
+  curEnemy: {fileID: 0}
+--- !u!114 &8096046481077048023
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 162860}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b492615fe540ce64d8f4cd10ad90fec2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Hero
+  state: 0
+  ringSelection: {fileID: 2522479125059019646}
+  curHP: 100
+  maxHP: 100
+  curCharTarget: {fileID: 0}
+  attackRange: 2
+  attackDamage: 3
+  defensePower: 0
+  attackCoolDown: 2
+  attackTimer: 0
+  findingRange: 20
+  magicSkills:
+  - id: 0
+    name: 
+    range: 0
+    power: 0
+    loadTime: 0
+    shootTime: 0
+    loadId: 0
+    shootId: 0
+    icon: {fileID: 0}
+  curMagicCast:
+    id: 0
+    name: 
+    range: 0
+    power: 0
+    loadTime: 0
+    shootTime: 0
+    loadId: 0
+    shootId: 0
+    icon: {fileID: 0}
+  isMagicMode: 0
+  inventoryItems: []
+  equipmentItems: []
+  charName: 
+  profileSprite: {fileID: 21300000, guid: 3e6c38b3b6a57db43a330ccea0e4044b, type: 3}
+  prefabID: -1
+  shieldHand: {fileID: 483062}
+  shieldLocalPos: {x: 0, y: 0, z: 0}
+  shieldLocalEuler: {x: -90, y: 0, z: -180}
+  strength: 10
+  dexterity: 10
+  constitution: 10
+  intelligence: 10
+  wisdom: 10
+  charisma: 10
+  level: 1
+  exp: 0
+  nextExp: 30
+--- !u!114 &5202603433873596675
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 162860}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c0535c8e739597346a18ec43cd1ccc0f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharAnimation
+--- !u!114 &2329831759745720359
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5134,5 +5223,10 @@ PrefabInstance:
 --- !u!4 &961926110612498984 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2867166371249400384, guid: af489e954ce603745bb20124909762ef, type: 3}
+  m_PrefabInstance: {fileID: 3067877327590326376}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2522479125059019646 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 689876796715574038, guid: af489e954ce603745bb20124909762ef, type: 3}
   m_PrefabInstance: {fileID: 3067877327590326376}
   m_PrefabAsset: {fileID: 0}

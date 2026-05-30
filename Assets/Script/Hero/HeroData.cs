@@ -12,6 +12,7 @@ public class HeroData : ScriptableObject
     public int attackDamage = 3;
     public int defensePower = 0;
     public int[] inventoryItemIds = new int[InventoryManager.MAXSLOT];
+    public int[] equipmentItemIds = new int[InventoryManager.EQUIP_COUNT];
 
     public void SaveFrom(Hero hero)
     {
@@ -21,16 +22,11 @@ public class HeroData : ScriptableObject
         level = hero.Level;
         exp = hero.Exp;
         nextExp = hero.NextExp;
-        attackDamage = hero.AttackDamage;
-        defensePower = hero.DefensePower;
+        attackDamage = hero.AttackDamage;   // includes equipped weapon bonus
+        defensePower = hero.DefensePower;   // includes equipped shield bonus
 
-        for (int i = 0; i < InventoryManager.MAXSLOT; i++)
-        {
-            if (hero.InventoryItems != null && i < hero.InventoryItems.Length && hero.InventoryItems[i] != null)
-                inventoryItemIds[i] = hero.InventoryItems[i].ID;
-            else
-                inventoryItemIds[i] = -1;
-        }
+        SaveIds(hero.InventoryItems, ref inventoryItemIds, InventoryManager.MAXSLOT);
+        SaveIds(hero.EquipmentItems, ref equipmentItemIds, InventoryManager.EQUIP_COUNT);
     }
 
     public void LoadTo(Hero hero)
@@ -40,18 +36,30 @@ public class HeroData : ScriptableObject
         hero.Level = level;
         hero.Exp = exp;
         hero.NextExp = nextExp;
-        hero.AttackDamage = attackDamage;
+        hero.AttackDamage = attackDamage;   // already includes equip bonuses
         hero.DefensePower = defensePower;
 
-        if (hero.InventoryItems == null)
-            hero.InventoryItems = new Item[InventoryManager.MAXSLOT];
+        hero.InventoryItems = LoadIds(inventoryItemIds, InventoryManager.MAXSLOT);
+        hero.EquipmentItems = LoadIds(equipmentItemIds, InventoryManager.EQUIP_COUNT);
 
-        for (int i = 0; i < InventoryManager.MAXSLOT; i++)
-        {
-            if (inventoryItemIds[i] >= 0 && InventoryManager.instance != null)
-                hero.InventoryItems[i] = InventoryManager.instance.CreateItem(inventoryItemIds[i]);
-            else
-                hero.InventoryItems[i] = null;
-        }
+        // Stats were restored above (with bonuses), so only rebuild the 3D models here
+        hero.RefreshEquipVisuals();
+    }
+
+    // ── helpers ───────────────────────────────────────────────────────────────
+    private static void SaveIds(Item[] items, ref int[] ids, int length)
+    {
+        if (ids == null || ids.Length != length) ids = new int[length];
+        for (int i = 0; i < length; i++)
+            ids[i] = (items != null && i < items.Length && items[i] != null) ? items[i].ID : -1;
+    }
+
+    private static Item[] LoadIds(int[] ids, int length)
+    {
+        Item[] items = new Item[length];
+        if (ids == null || InventoryManager.instance == null) return items;
+        for (int i = 0; i < length && i < ids.Length; i++)
+            items[i] = ids[i] >= 0 ? InventoryManager.instance.CreateItem(ids[i]) : null;
+        return items;
     }
 }

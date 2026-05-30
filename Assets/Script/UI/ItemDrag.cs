@@ -9,6 +9,9 @@ public class ItemDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
     private Transform originalParent;
     private CanvasGroup canvasGroup;
 
+    // Slot captured at drag start (before the icon leaves its slot)
+    public InventorySlot OriginSlot { get; private set; }
+
     public Item item;
 
     void Awake()
@@ -26,6 +29,7 @@ public class ItemDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
     // W8: Begin drag — lift icon to canvas root
     public void OnBeginDrag(PointerEventData eventData)
     {
+        OriginSlot = GetComponentInParent<InventorySlot>();   // capture BEFORE leaving the slot
         originalParent = transform.parent;
         transform.SetParent(transform.root);
         canvasGroup.blocksRaycasts = false;

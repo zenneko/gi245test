@@ -7,15 +7,17 @@ public static class Formula
         LayerMask charLayer = LayerMask.GetMask("Character");
         Character closestTarget = null;
         float closestDist = 0f;
-        RaycastHit[] hits = Physics.SphereCastAll(me.transform.position, me.FindingRange, Vector3.up, charLayer);
+        // OverlapSphere detects ALL colliders inside the radius (including ones that
+        // already overlap the start point — SphereCast misses those).
+        Collider[] hits = Physics.OverlapSphere(me.transform.position, me.FindingRange, charLayer);
 
-        for(int i = 0; i < hits.Length; i++)
+        for (int i = 0; i < hits.Length; i++)
         {
-            Character target = hits[i].collider.GetComponent<Character>();
+            Character target = hits[i].GetComponent<Character>();
             if (target == null || target.CurHP <= 0 || target == me) continue;
             if (!me.IsMyEnemy(target.tag)) continue;
 
-            float distance = Vector3.Distance(me.transform.position, hits[i].transform.position);
+            float distance = Vector3.Distance(me.transform.position, target.transform.position);
             if (closestTarget == null || distance < closestDist)
             {
                 closestTarget = target;
